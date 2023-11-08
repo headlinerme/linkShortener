@@ -5,7 +5,6 @@ import (
 	"testing"
 )
 
-// TestShortenAndRetrieve - test that the shortened URL is stored and retrieved from database.
 func TestShortenAndRetrieve(t *testing.T) {
 	testURL := "https://github.com/encoredev/encore"
 	sp := ShortenParams{URL: testURL}

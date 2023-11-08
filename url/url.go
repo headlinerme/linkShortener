@@ -9,16 +9,14 @@ import (
 )
 
 type URL struct {
-	ID  string // short-form URL id
-	URL string // complete URL, in long form
+	ID  string
+	URL string
 }
 
 type ShortenParams struct {
-	URL string // the URL to shorten
+	URL string
 }
 
-// Shorten shortens a URL.
-//
 //encore:api public method=POST path=/url
 func Shorten(ctx context.Context, p *ShortenParams) (*URL, error) {
 	id, err := generateID()
@@ -30,26 +28,25 @@ func Shorten(ctx context.Context, p *ShortenParams) (*URL, error) {
 	return &URL{ID: id, URL: p.URL}, nil
 }
 
-// generateID generates a random short ID.
 func generateID() (string, error) {
-	var data [6]byte // 6 bytes of entropy
+	var data [7]byte
 	if _, err := rand.Read(data[:]); err != nil {
 		return "", err
 	}
 	return base64.RawURLEncoding.EncodeToString(data[:]), nil
 }
 
-// insert inserts a URL into the database.
 func insert(ctx context.Context, id, url string) error {
 	_, err := sqldb.Exec(ctx, `
         INSERT INTO url (id, original_url)
-        VALUES ($1, $2)
-    `, id, url)
+        SELECT $1, $2 
+        WHERE NOT EXISTS (
+        SELECT original_url FROM url WHERE url.original_url != $3
+        )
+    `, id, url, url)
 	return err
 }
 
-// Get retrieves the original URL for the id.
-//
 //encore:api public method=GET path=/url/:id
 func Get(ctx context.Context, id string) (*URL, error) {
 	u := &URL{ID: id}
